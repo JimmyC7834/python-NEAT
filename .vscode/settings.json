@@ -1,0 +1,5 @@
+{
+    /*"python.linting.pylintArgs": [
+        "--extension-pkg-whitelist=pygame","--errors-only"  // The extension is "lxml" not "1xml"
+    ]*/
+}
