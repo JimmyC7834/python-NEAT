@@ -2,11 +2,10 @@ from tkinter import Tk, Canvas, Frame, BOTH, Entry, Scrollbar
 from random import random, randint
 import math
 
-class Genome():
+class Genomes():
     def __init__(self):
-        self.nodeGenes = [NodeGene(_id=i, _type='input') for i in range(4)]
-        self.nodeGenes[2].type='hidden'
-        self.nodeGenes[3].type='output'
+        self.nodeGenes = [NodeGene(_id=i, _type='input') for i in range(3)]
+        self.nodeGenes[2].type='output'
         self.connectionGenes = []
     
     def add_nodeGene(self, nodeGene):
@@ -61,56 +60,59 @@ class NodeGene():
         TYPES = ['input', 'hidden', 'output']
         self.type = _type if _type != None else TYPES[randint(0, len(TYPES)-1)]
         self.id = _id
-        self.x = 0
-        self.y = 0
 
 class NEATPanel(Frame):
-    def __init__(self, tile_size):
+    def __init__(self, tile_size, Genomes=[]):
         self.root = Tk()
-        self.root.geometry("780x640")
+        self.root.geometry("780x720")
         self.root.update()
-        self.root.config(bg='gray')
+        self.genoemes_num = len(Genomes)
+        self.genoemes = Genomes
+        self.tile_num = 5
+        self.tile_size = tile_size
         self.entry = Entry(self.root)
-        self.entry.grid(row=0, column=2)
+        self.entry.grid(row=0, column=4)
         self.root.bind('<Return>', self.hit_enter)
-        self.canvas = Canvas(self.root, width=640, height=640, bg='light gray')
-        self.canvas.grid(row=0, column=0)
+
+        canvas_main = Canvas(self.root, width=620, height=720)
+        canvas_main.grid(row=0, column=0, sticky='news')
+
+        scroll_bar = Scrollbar(self.root, orient="vertical", command=canvas_main.yview)
+        scroll_bar.grid(row=0, column=1, sticky='ns')
+        canvas_main.configure(yscrollcommand=scroll_bar.set)
+
+        self.frame=Frame(self.root,width=600,height=math.ceil(self.genoemes_num/self.tile_num)*120)
+        canvas_main.create_window((0, 0), window=self.frame, anchor='nw')
+
+        self.canvases = [Canvas(self.frame, width = self.tile_size, height = self.tile_size, bg='gray') for _ in range(self.genoemes_num)]
+    
+        counter = 0
+        for i in range(math.ceil(self.genoemes_num/self.tile_num)):
+            for j in range(self.tile_num):
+                self.canvases[counter].grid(row=i, column=j, sticky='news')
+                if counter == self.genoemes_num-1:
+                    break
+                counter += 1
+
+        canvas_main.config(scrollregion=canvas_main.bbox("all"))
+        self.frame.update_idletasks()
 
     def start(self):
         self.root.mainloop()
 
-    def hit_enter(self, event, genomes=[]):
+    def hit_enter(self, event):
         _input = int(self.entry.get())
-        self.display_genome(genomes[_input])
         #self.canvases[_input].place(x=0,y=0)
-    
-    def display_genome(self,genome):
-        nodes = {
-            'input':[],
-            'hidden':[],
-            'output':[]
-        }
-
-        for i in genome.nodeGenes:
-            nodes[i.type].append(i)
-        
-        for i,v in enumerate(nodes['input']):
-            v.x = 40
-            v.y = i*(640/len(nodes['input']))
-        
-        for i,v in enumerate(nodes['output']):
-            v.x = 600
-            v.y = (i+1)*(640/len(nodes['output'])+1)
-        
-        for i in genome.nodeGenes:
-            self.canvas.create_oval(i.x-15, i.y-15, i.x+15, i.y+15, fill='red')
+        self.canvases[_input].grid(row=0, column=0, columnspan = 2, rowspan = 2, padx=5, pady=5)
+        self.canvases[_input].config(width=320, height=320)
+        self.frame.update_idletasks()
 
 if __name__ == "__main__":
     
-    g = Genome()
+    g = Genomes()
     g.mutate_add_connection()
     g.mutate_add_node()
 
-    NEATPanel(120).start()
+    NEATPanel(120,[Genomes() for _ in range(80)]).start()
 
     
