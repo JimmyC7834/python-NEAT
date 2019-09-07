@@ -7,7 +7,13 @@ class Genome():
         self.nodeGenes = [NodeGene(_id=i, _type='input') for i in range(4)]
         self.nodeGenes[2].type='hidden'
         self.nodeGenes[3].type='output'
+        self.nodeGenes[0].connect(self.nodeGenes[2])
+        self.nodeGenes[1].connect(self.nodeGenes[2])
+        self.nodeGenes[2].connect(self.nodeGenes[3])
         self.connectionGenes = []
+        self.connectionGenes.append(ConnectionGene(self.nodeGenes[0],self.nodeGenes[2],_id=0))
+        self.connectionGenes.append(ConnectionGene(self.nodeGenes[1],self.nodeGenes[2],_id=1))
+        self.connectionGenes.append(ConnectionGene(self.nodeGenes[2],self.nodeGenes[3],_id=2))
     
     def add_nodeGene(self, nodeGene):
         nodeGene.id = len(self.nodeGenes)
@@ -26,9 +32,11 @@ class Genome():
     def mutate_add_node(self):
         c = self.connectionGenes[randint(0, len(self.connectionGenes)-1)]
         c.disable
-        new_nodeGene = NodeGene(_type='hidden')
+        new_nodeGene = NodeGene(_id=len(self.nodeGenes), _type='hidden')
         new_connectionGene1 = ConnectionGene(c.in_node, new_nodeGene, weight=1)
         new_connectionGene2 = ConnectionGene(new_nodeGene,  c.out_node,  weight=c.weight)
+        c.in_node.connect(new_nodeGene)
+        new_nodeGene.connect(c.out_node)
         self.add_nodeGene(new_nodeGene)
         self.add_connectionGene(new_connectionGene1)
         self.add_connectionGene(new_connectionGene2)
@@ -36,6 +44,8 @@ class Genome():
     def mutate_add_connection(self):
         nodeGene1 = self.get_random_nodeGene(['output'])
         nodeGene2 = self.get_random_nodeGene(['input'])
+        nodeGene1.connect(nodeGene2)
+
         for i in self.connectionGenes:
             if nodeGene1 == i.in_node and nodeGene2 == i.out_node:
                 return
@@ -63,6 +73,12 @@ class NodeGene():
         self.id = _id
         self.x = 0
         self.y = 0
+        self.in_ids = []
+        self.out_ids = []
+    
+    def connect(self,nodeGene):
+        self.out_ids.append(nodeGene.id)
+        nodeGene.in_ids.append(self.id)
 
 class NEATPanel(Frame):
     def __init__(self, tile_size):
@@ -96,21 +112,46 @@ class NEATPanel(Frame):
         
         for i,v in enumerate(nodes['input']):
             v.x = 40
-            v.y = i*(640/len(nodes['input']))
+            v.y = (i+.5)*(640/len(nodes['input']))
         
         for i,v in enumerate(nodes['output']):
             v.x = 600
-            v.y = (i+1)*(640/len(nodes['output'])+1)
-        
+            v.y = (i+.5)*(640/len(nodes['output']))
+                
+        for i in nodes['hidden']:
+            x,y = 0,0
+            connected_num = len(i.in_ids) + len(i.out_ids)
+
+            for j in i.in_ids:
+                x += genome.nodeGenes[j].x
+                y += genome.nodeGenes[j].y
+            for j in i.out_ids:
+                x += genome.nodeGenes[j].x
+                y += genome.nodeGenes[j].y
+            x /= connected_num
+            y /= connected_num
+            i.x = x
+            i.y = y
+
+        for i in genome.connectionGenes:
+            self.canvas.create_line(i.in_node.x, i.in_node.y, i.out_node.x, i.out_node.y, width=i.weight*5, fill='blue')
+
         for i in genome.nodeGenes:
-            self.canvas.create_oval(i.x-15, i.y-15, i.x+15, i.y+15, fill='red')
+            self.canvas.create_oval(i.x-15, i.y-15, i.x+15, i.y+15, fill='red', outline='red')
+
 
 if __name__ == "__main__":
     
     g = Genome()
     g.mutate_add_connection()
     g.mutate_add_node()
-
-    NEATPanel(120).start()
-
+    g.mutate_add_connection()
+    g.mutate_add_node()
+    g.mutate_add_connection()
+    g.mutate_add_node()
+    
+    np = NEATPanel(120)
+    np.display_genome(g)
+    np.start()
+    
     
