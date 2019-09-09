@@ -2,10 +2,7 @@ from tkinter import Tk, Canvas, Frame, BOTH, Entry, Scrollbar
 from random import random, randint
 import math
 
-class Generation():
-    def __init__(self, genome_num):
-        self.genomes = [Genome for _ in range(genome_num)]
-        self.global_inn_number = 0
+global_inn_number = 0
 
 class Genome():
     def __init__(self):
@@ -16,11 +13,11 @@ class Genome():
         self.nodeGenes[0].connect(self.nodeGenes[2])
         self.nodeGenes[1].connect(self.nodeGenes[2])
         self.nodeGenes[2].connect(self.nodeGenes[3])
-        
+
         self.connectionGenes = []
-        self.connectionGenes.append(ConnectionGene(self.nodeGenes[0], self.nodeGenes[2], _id=0, inn_number=0))
-        self.connectionGenes.append(ConnectionGene(self.nodeGenes[1], self.nodeGenes[2], _id=1, inn_number=0))
-        self.connectionGenes.append(ConnectionGene(self.nodeGenes[2], self.nodeGenes[3], _id=2, inn_number=0))
+        self.add_connectionGene(ConnectionGene(self.nodeGenes[0], self.nodeGenes[2], _id=0, inn_number=0))
+        self.add_connectionGene(ConnectionGene(self.nodeGenes[1], self.nodeGenes[2], _id=1, inn_number=0))
+        self.add_connectionGene(ConnectionGene(self.nodeGenes[2], self.nodeGenes[3], _id=2, inn_number=0))
     
     def add_nodeGene(self, nodeGene):
         nodeGene.id = len(self.nodeGenes)
@@ -29,6 +26,9 @@ class Genome():
 
     def add_connectionGene(self, connectionGene):
         connectionGene.id = len(self.connectionGenes)
+        global global_inn_number
+        connectionGene.inn_number = global_inn_number
+        global_inn_number += 1
         self.connectionGenes.append(connectionGene)
         print('connected nodes', connectionGene.in_node.id, ',', connectionGene.out_node.id)
 
@@ -121,8 +121,10 @@ class NEATPanel(Frame):
         # _input = int(self.entry.get())
         g = Genome()
         self.canvas.delete("all")
+
         g.mutate_add_connection()
         g.mutate_add_node()
+
         self.display_genome(g)
 
         #self.canvases[_input].place(x=0, y=0)
@@ -167,16 +169,9 @@ class NEATPanel(Frame):
             self.canvas.create_oval(i.x-15, i.y-15, i.x+15, i.y+15, fill='red', outline='red')
             self.canvas.create_text(i.x, i.y, text=i.id, fill='white')
 
-
 if __name__ == "__main__":
-    
+    global_inn_number = 0
     g = Genome()
-    # g.mutate_add_connection()
-    g.mutate_add_node()
-    # g.mutate_add_connection()
-    # g.mutate_add_node()
-    # g.mutate_add_connection()
-    # g.mutate_add_node()
     
     np = NEATPanel(120)
     np.display_genome(g)
